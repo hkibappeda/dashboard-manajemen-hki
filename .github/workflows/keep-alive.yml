@@ -1,0 +1,14 @@
+name: Supabase Keep Alive
+
+on:
+  # Jalan otomatis setiap hari jam 07:00 WIB (00:00 UTC)
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Project
+        run: curl -I https://bavalgzrnphfomabcxmm.supabase.co/rest/v1/
