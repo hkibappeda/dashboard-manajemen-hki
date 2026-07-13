@@ -1,5 +1,4 @@
 // app/api/hki/[id]/route.ts
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { createClient } from '@/utils/supabase/server'
@@ -9,16 +8,11 @@ import { Database } from '@/lib/database.types'
 
 export const dynamic = 'force-dynamic'
 
-// --- KONSTANTA ---
 const HKI_TABLE = 'hki'
 const PEMOHON_TABLE = 'pemohon'
 const HKI_BUCKET = 'sertifikat-hki'
-
-// --- SKEMA VALIDASI ---
 const idSchema = z.coerce.number().int().positive('ID tidak valid.')
-
 const hkiUpdateSchema = z.object({
-  // ✅ PERBAIKAN: Validasi .min(3, ...) diubah menjadi .min(1, ...)
   nama_hki: z.string().min(1, 'Nama HKI wajib diisi.'),
   nama_pemohon: z.string().min(3, 'Nama pemohon minimal 3 karakter.'),
   alamat: z.string().optional().nullable(),
@@ -31,7 +25,6 @@ const hkiUpdateSchema = z.object({
   id_kelas: z.coerce.number().optional().nullable(),
 })
 
-// --- HELPER TERPUSAT ---
 function apiError(message: string, status: number, errors?: object) {
   return NextResponse.json({ message, errors }, { status })
 }
@@ -61,17 +54,15 @@ async function authorizeAdmin(supabase: SupabaseClient<Database>) {
   return user
 }
 
-// --- API HANDLERS ---
-
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const { id: rawId } = await params
+  const supabase = await createClient()
 
   try {
-    const hkiId = idSchema.parse(params.id)
+    const hkiId = idSchema.parse(rawId)
     await authorizeAdmin(supabase)
 
     const { data, error } = await supabase
@@ -102,13 +93,13 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const { id: rawId } = await params
+  const supabase = await createClient()
 
   try {
-    const hkiId = idSchema.parse(params.id)
+    const hkiId = idSchema.parse(rawId)
     const user = await authorizeAdmin(supabase)
 
     const formData = await request.formData()
@@ -116,6 +107,20 @@ export async function PATCH(
 
     const { nama_pemohon, alamat, ...hkiFields } =
       hkiUpdateSchema.parse(rawData)
+    
+    const { data: jenisRecord } = await supabase
+      .from('jenis_hki')
+      .select('nama_jenis_hki')
+      .eq('id_jenis_hki', hkiFields.id_jenis_hki)
+      .single()
+
+    if (jenisRecord) {
+      if (!jenisRecord.nama_jenis_hki.toLowerCase().includes('merek')) {
+        hkiFields.id_kelas = null
+      } else if (!hkiFields.id_kelas) {
+        throw new Error('Kelas HKI wajib diisi untuk Merek.')
+      }
+    }
 
     const { data: currentHki, error: findError } = await supabase
       .from(HKI_TABLE)
@@ -212,13 +217,13 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const { id: rawId } = await params
+  const supabase = await createClient()
 
   try {
-    const hkiId = idSchema.parse(params.id)
+    const hkiId = idSchema.parse(rawId)
     await authorizeAdmin(supabase)
 
     const { data: hkiData, error: findError } = await supabase

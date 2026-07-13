@@ -76,8 +76,6 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 
-// --- Tipe dan Skema Validasi ---
-
 type UserProfile = {
   id: string
   email?: string
@@ -91,7 +89,6 @@ interface UserManagementClientProps {
   currentUserIsSuperAdmin: boolean
 }
 
-// Skema Zod untuk validasi form tambah/edit pengguna
 const userFormSchema = z
   .object({
     full_name: z
@@ -111,8 +108,6 @@ const userFormSchema = z
   )
 
 type UserFormData = z.infer<typeof userFormSchema>
-
-// --- Komponen Utama: UserManagementClient ---
 
 export function UserManagementClient({
   initialUsers,
@@ -293,8 +288,6 @@ export function UserManagementClient({
   )
 }
 
-// --- Komponen Modal (dengan Validasi Zod) ---
-
 interface UserModalProps {
   isOpen: boolean
   onClose: () => void
@@ -327,7 +320,6 @@ function UserModal({
   } = form
 
   const onSubmit = async (formData: UserFormData) => {
-    // Pastikan password tidak dikirim jika kosong saat mode edit
     const payload = { ...formData }
     if (isEditMode && !payload.password) {
       delete payload.password

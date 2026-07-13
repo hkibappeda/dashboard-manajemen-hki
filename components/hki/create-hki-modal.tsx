@@ -16,8 +16,6 @@ import { PlusSquare, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Skeleton } from '@/components/ui/skeleton'
 
-// ✨ OPTIMASI UTAMA: Gunakan dynamic import untuk HKIForm.
-// Kode untuk HKIForm baru akan di-download saat modal ini dibuka.
 const HKIForm = lazy(() =>
   import('@/components/forms/hki-form').then((module) => ({
     default: module.HKIForm,
@@ -33,8 +31,6 @@ interface CreateHKIModalProps {
 }
 
 const CREATE_FORM_ID = 'hki-create-form'
-
-// Komponen placeholder sederhana saat form sedang di-load
 const FormSkeleton = () => (
   <div className="space-y-6">
     <div className="space-y-2">
@@ -93,8 +89,6 @@ export const CreateHKIModal = memo(
           </motion.div>
 
           <div className="flex-1 overflow-y-auto px-6 py-4">
-            {/* ✨ OPTIMASI: Bungkus HKIForm dengan Suspense. */}
-            {/* Fallback akan ditampilkan saat kode HKIForm sedang diunduh. */}
             <Suspense fallback={<FormSkeleton />}>
               {isOpen && (
                 <HKIForm

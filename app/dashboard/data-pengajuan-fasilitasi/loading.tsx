@@ -5,20 +5,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default function Loading() {
   return (
     <div className="space-y-6 animate-pulse">
-      {/* Skeleton untuk Page Header */}
       <div className="space-y-2">
         <Skeleton className="h-8 w-1/2 rounded-md" />
         <Skeleton className="h-4 w-1/3 rounded-md" />
       </div>
 
-      {/* Skeleton untuk Toolbar (Filter Card) */}
       <Skeleton className="h-[180px] w-full rounded-xl" />
 
-      {/* Skeleton untuk Tabel Data */}
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
-            {/* Hanya tampilkan satu baris header skeleton */}
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-12"><Skeleton className="h-5 w-full" /></TableHead>
               <TableHead className="w-[50px]"><Skeleton className="h-5 w-full" /></TableHead>
@@ -31,7 +27,6 @@ export default function Loading() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {/* Buat 5 baris skeleton untuk merepresentasikan data */}
             {Array.from({ length: 5 }).map((_, i) => (
               <TableRow key={i} className="hover:bg-transparent">
                 <TableCell><Skeleton className="h-5 w-5 rounded-sm" /></TableCell>
@@ -46,7 +41,6 @@ export default function Loading() {
             ))}
           </TableBody>
         </Table>
-        {/* Skeleton untuk Pagination */}
         <div className="flex items-center justify-between p-4 border-t">
             <Skeleton className="h-5 w-32" />
             <div className="flex items-center gap-2">

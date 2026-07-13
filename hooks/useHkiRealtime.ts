@@ -3,15 +3,13 @@
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase-browser'
 import { useQueryClient } from '@tanstack/react-query'
-import { HKIEntry } from '@/lib/types'
+import { useDebouncedCallback } from 'use-debounce'
 
-/**
- * Hook kustom untuk berlangganan perubahan real-time pada tabel HKI di Supabase.
- * Ini akan secara otomatis memperbarui data di tabel ketika ada perubahan
- * dari pengguna lain atau proses backend.
- */
 export function useHkiRealtime() {
   const queryClient = useQueryClient()
+  const invalidateHkiData = useDebouncedCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['hkiData'] })
+  }, 1500)
 
   useEffect(() => {
     const supabase = createClient()
@@ -23,17 +21,12 @@ export function useHkiRealtime() {
         { event: '*', schema: 'public', table: 'hki' },
         (payload) => {
           console.log('Perubahan realtime terdeteksi:', payload)
-
-          // Invalidate semua query yang berhubungan dengan 'hkiData'
-          // Ini akan memicu React Query untuk me-refetch data secara otomatis.
-          queryClient.invalidateQueries({ queryKey: ['hkiData'] })
+          invalidateHkiData()
         }
       )
       .subscribe()
-
-    // Cleanup function untuk berhenti berlangganan saat komponen di-unmount
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [queryClient])
+  }, [invalidateHkiData])
 }

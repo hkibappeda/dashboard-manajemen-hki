@@ -1,15 +1,13 @@
 // components/layout/navbar.tsx
 'use client'
 
-// PERBAIKAN: Menambahkan 'memo' ke dalam import dari React
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import React, { useMemo, memo } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
-import { toast } from 'sonner'
-import { Menu, LogOut, Bell, Settings, ChevronRight } from 'lucide-react'
+import { Menu, Settings } from 'lucide-react'
+import { signOutAction } from '@/app/actions/auth'
 
-import { createClient } from '@/lib/supabase-browser'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,7 +19,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -30,16 +27,14 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { LogoutSubmitButton } from '@/components/auth/logout-button'
 
 interface TopbarProps {
   sidebarOpen: boolean
   setSidebarOpen: (val: boolean) => void
+  user?: User | null
 }
 
-/**
- * Komponen Breadcrumbs untuk navigasi.
- * Dibuat sebagai komponen terpisah dan di-memoize untuk optimasi.
- */
 const TopbarBreadcrumbs = memo(function TopbarBreadcrumbs() {
   const pathname = usePathname()
 
@@ -85,54 +80,13 @@ const TopbarBreadcrumbs = memo(function TopbarBreadcrumbs() {
   )
 })
 TopbarBreadcrumbs.displayName = 'TopbarBreadcrumbs'
-
-export function Topbar({ sidebarOpen, setSidebarOpen }: TopbarProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loadingUser, setLoadingUser] = useState(true)
-  const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
-
-  useEffect(() => {
-    const fetchInitialUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
-      setLoadingUser(false)
-    }
-
-    fetchInitialUser()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [supabase])
-
-  const handleLogout = useCallback(async () => {
-    const toastId = toast.loading('Sedang keluar...')
-    try {
-      await supabase.auth.signOut()
-      toast.success('Berhasil keluar!', { id: toastId })
-      router.push('/login')
-    } catch (err) {
-      console.error('❌ Error saat logout:', err)
-      toast.error('Gagal keluar. Silakan coba lagi.', { id: toastId })
-    }
-  }, [router, supabase])
-
+export function Topbar({ sidebarOpen, setSidebarOpen, user }: TopbarProps) {
   const getInitials = (email?: string | null) =>
     email ? email.charAt(0).toUpperCase() : '?'
 
   return (
     <header className="sticky top-0 z-30 w-full border-b border-border bg-background/80 shadow-sm backdrop-blur-md">
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
-        {/* Left Section */}
         <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="ghost"
@@ -146,8 +100,6 @@ export function Topbar({ sidebarOpen, setSidebarOpen }: TopbarProps) {
 
           <TopbarBreadcrumbs />
         </div>
-
-        {/* Right Section */}
         <div className="flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -157,19 +109,13 @@ export function Topbar({ sidebarOpen, setSidebarOpen }: TopbarProps) {
                 aria-label="User Menu"
               >
                 <Avatar className="h-8 w-8">
-                  {loadingUser ? (
-                    <Skeleton className="h-full w-full rounded-full" />
-                  ) : (
-                    <AvatarFallback className="bg-primary text-sm font-semibold text-primary-foreground">
-                      {getInitials(user?.email)}
-                    </AvatarFallback>
-                  )}
+                  <AvatarFallback className="bg-primary text-sm font-semibold text-primary-foreground">
+                    {getInitials(user?.email)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="hidden text-left lg:block">
                   <span className="block text-sm font-semibold text-foreground">
-                    {loadingUser
-                      ? 'Memuat...'
-                      : user?.email?.split('@')[0] || 'Admin'}
+                    {user?.email?.split('@')[0] || 'Admin'}
                   </span>
                 </div>
               </Button>
@@ -178,9 +124,7 @@ export function Topbar({ sidebarOpen, setSidebarOpen }: TopbarProps) {
               <DropdownMenuLabel>
                 <p className="font-semibold">Akun Saya</p>
                 <p className="truncate text-xs font-normal text-muted-foreground">
-                  {loadingUser
-                    ? 'Memuat email...'
-                    : user?.email || 'Tidak login'}
+                  {user?.email || 'Tidak login'}
                 </p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -191,14 +135,14 @@ export function Topbar({ sidebarOpen, setSidebarOpen }: TopbarProps) {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                disabled={loadingUser || !user}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Keluar</span>
-              </DropdownMenuItem>
+              
+              <form action={signOutAction} className="w-full">
+                <DropdownMenuItem asChild>
+                  <LogoutSubmitButton className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive focus:bg-destructive/10 focus:text-destructive disabled:pointer-events-none disabled:opacity-50">
+                    Keluar
+                  </LogoutSubmitButton>
+                </DropdownMenuItem>
+              </form>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

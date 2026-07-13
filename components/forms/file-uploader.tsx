@@ -62,7 +62,6 @@ export function FileUploader({
         return
       }
 
-      // Tangani file yang diterima
       if (acceptedFiles.length > 0) {
         const selectedFile = acceptedFiles[0]
         setFile(selectedFile)
@@ -72,13 +71,13 @@ export function FileUploader({
         })
       }
     },
-    [onFileSelect, maxSizeInMB, acceptTypesLabel, accept] // 'accept' ditambahkan untuk onDrop-hook
+    [onFileSelect, maxSizeInMB, acceptTypesLabel, accept] 
   )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: accept, // Gunakan prop 'accept'
-    maxSize: maxSize, // Gunakan prop 'maxSize'
+    accept: accept, 
+    maxSize: maxSize, 
     multiple: false,
   })
 

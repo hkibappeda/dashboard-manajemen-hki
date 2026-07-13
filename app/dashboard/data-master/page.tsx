@@ -8,10 +8,6 @@ import type { Database } from '@/lib/database.types'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * Mengambil semua data master secara paralel.
- * --- PERBAIKAN: Melempar error jika query gagal ---
- */
 async function getMasterData(supabase: SupabaseClient<Database>) {
   const [jenisRes, kelasRes, pengusulRes] = await Promise.all([
     supabase.from('jenis_hki').select('*').order('id_jenis_hki'),
@@ -19,7 +15,6 @@ async function getMasterData(supabase: SupabaseClient<Database>) {
     supabase.from('pengusul').select('*').order('nama_opd'),
   ])
 
-  // Jika salah satu query gagal, lempar error untuk ditangkap oleh Next.js
   if (jenisRes.error) throw new Error(`Gagal mengambil data Jenis HKI: ${jenisRes.error.message}`);
   if (kelasRes.error) throw new Error(`Gagal mengambil data Kelas HKI: ${kelasRes.error.message}`);
   if (pengusulRes.error) throw new Error(`Gagal mengambil data Pengusul: ${pengusulRes.error.message}`);
@@ -31,11 +26,9 @@ async function getMasterData(supabase: SupabaseClient<Database>) {
   }
 }
 
-export default async function MasterDataPage() {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+export default async function DataMasterPage() {
+  const supabase = await createClient()
 
-  // --- PERBAIKAN: Menyederhanakan logika otorisasi ---
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     redirect('/login')
@@ -46,13 +39,11 @@ export default async function MasterDataPage() {
     .select('role')
     .eq('id', user.id)
     .single()
-    
-  // Jika ada error saat mengambil profil atau peran bukan admin, redirect
+
   if (profileError || profile?.role !== 'admin') {
     redirect('/dashboard?error=Akses_Ditolak')
   }
 
-  // Ambil data
   const { jenisData, kelasData, pengusulData } = await getMasterData(supabase)
 
   return (

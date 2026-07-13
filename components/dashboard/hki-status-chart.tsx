@@ -14,7 +14,6 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { CheckCircle } from 'lucide-react'
 
-// Definisikan tipe props agar lebih jelas
 interface HkiStatusChartProps {
   data: {
     name: string
@@ -24,12 +23,10 @@ interface HkiStatusChartProps {
 }
 
 export function HkiStatusChart({ data }: HkiStatusChartProps) {
-  // Hitung total dari semua data untuk ditampilkan di tengah chart
   const totalCount = React.useMemo(() => {
     return data.reduce((acc, curr) => acc + curr.count, 0)
   }, [data])
 
-  // Buat ChartConfig dari data yang masuk agar legend dan tooltip dinamis
   const chartConfig = React.useMemo(() => {
     return data.reduce((acc, item) => {
       acc[item.name] = {

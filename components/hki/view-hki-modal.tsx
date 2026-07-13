@@ -34,8 +34,6 @@ import { getStatusStyle } from './hki-utils'
 import { useMutation } from '@tanstack/react-query'
 import { motion, Variants, AnimatePresence } from 'framer-motion'
 
-// --- Tipe dan Komponen Helper ---
-
 interface IconDetailItemProps {
   icon: LucideIcon
   label: string
@@ -83,8 +81,6 @@ const getCertificateUrl = async ({
   }
   return data
 }
-
-// --- Komponen Utama ---
 
 export const ViewHKIModal = memo(
   ({ isOpen, onClose, entry }: ViewHKIModalProps) => {
@@ -185,7 +181,6 @@ export const ViewHKIModal = memo(
             initial="hidden"
             animate="visible"
           >
-            {/* --- GRUP 1: Detail Properti HKI --- */}
             <motion.div variants={itemVariants} className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">
                 Detail Properti HKI
@@ -228,7 +223,6 @@ export const ViewHKIModal = memo(
 
             <Separator />
 
-            {/* --- GRUP 2: Informasi Pemohon --- */}
             <motion.div variants={itemVariants} className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">
                 Informasi Pemohon
@@ -249,7 +243,6 @@ export const ViewHKIModal = memo(
 
             <Separator />
 
-            {/* --- GRUP 3: Administrasi --- */}
             <motion.div variants={itemVariants} className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">
                 Administrasi
@@ -273,7 +266,6 @@ export const ViewHKIModal = memo(
               </IconDetailItem>
             </motion.div>
 
-            {/* Bagian Sertifikat PDF */}
             <div className="border-t pt-6">
               <IconDetailItem label="Sertifikat PDF" icon={Paperclip}>
                 {entry.sertifikat_pdf ? (

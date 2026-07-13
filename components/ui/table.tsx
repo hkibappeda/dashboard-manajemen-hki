@@ -8,7 +8,6 @@ const Table = React.forwardRef<
   <div className="relative w-full overflow-auto">
     <table
       ref={ref}
-      // ✅ PERBAIKAN: Menggunakan `table-fixed` untuk layout kolom yang stabil
       className={cn('w-full caption-bottom text-sm table-fixed', className)}
       {...props}
     />
@@ -58,7 +57,6 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      // ❌ Kelas 'flex' dan 'w-full' dihapus karena merusak layout
       'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
       className
     )}
@@ -74,8 +72,6 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      // ❌ Kelas 'flex' dihapus
-      // ✅ Menggunakan properti tabel standar: `align-middle`
       'h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
       className
     )}
@@ -91,8 +87,6 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      // ❌ Kelas 'flex' dihapus
-      // ✅ Menggunakan properti tabel standar: `align-middle` untuk perataan vertikal
       'p-4 align-middle [&:has([role=checkbox])]:pr-0',
       className
     )}

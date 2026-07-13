@@ -1,22 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'recharts', 'date-fns', 'exceljs'],
   },
+  serverExternalPackages: ['@react-pdf/renderer'],
   images: {
     unoptimized: true,
   },
+  turbopack: {},
   webpack: (config) => {
     config.experiments = { ...config.experiments, topLevelAwait: true };
-    // Hapus rule .mjs yang lama
-    // config.module.rules.push({
-    //   test: /.*\.mjs$/,
-    //   type: "javascript/auto",
-    //   resolve: {
-    //     fullySpecified: false,
-    //   },
-    // });
-
     return config
   },
 };

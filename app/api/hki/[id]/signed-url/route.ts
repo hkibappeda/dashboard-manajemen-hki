@@ -1,6 +1,5 @@
 // app/api/hki/[id]/signed-url/route.ts
 import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -9,13 +8,13 @@ const HKI_BUCKET = 'sertifikat-hki'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
-  const id = parseInt(params.id, 10)
+  const { id: rawId } = await params
+  const supabase = await createClient()
+  const id = parseInt(rawId, 10)
   const { searchParams } = request.nextUrl
-  const disposition = searchParams.get('disposition') // 'inline' or 'attachment'
+  const disposition = searchParams.get('disposition')
 
   if (!id || Number.isNaN(id)) {
     return NextResponse.json({ error: 'ID tidak valid' }, { status: 400 })
@@ -58,16 +57,14 @@ export async function GET(
       .replace(/[^a-zA-Z0-9 ]/g, '')
       .replace(/ /g, '_')
     const newFilename = `Sertifikat-${sanitizedName}.pdf`
-
-    // ✅ FIX: Logika diubah. Default adalah 'inline'. Hanya 'attachment' yang akan memaksa unduh.
     const options =
       disposition === 'attachment'
-        ? { download: newFilename } // Paksa unduh dengan nama kustom
-        : { download: false } // Biarkan browser menampilkannya (inline)
+        ? { download: newFilename }
+        : { download: false } 
 
     const { data, error: urlError } = await supabase.storage
       .from(HKI_BUCKET)
-      .createSignedUrl(hkiEntry.sertifikat_pdf, 300, options) // 5 menit
+      .createSignedUrl(hkiEntry.sertifikat_pdf, 300, options)
 
     if (urlError) {
       console.error('Supabase signed URL error:', urlError)
@@ -79,7 +76,7 @@ export async function GET(
 
     return NextResponse.json({
       signedUrl: data.signedUrl,
-      fileName: newFilename, // fileName tetap dikirim untuk digunakan jika perlu
+      fileName: newFilename, 
     })
   } catch (error: any) {
     console.error('Unexpected error in signed-url route:', error)

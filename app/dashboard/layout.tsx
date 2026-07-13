@@ -13,26 +13,16 @@ export const metadata: Metadata = {
   title: 'Manajemen Pengajuan Data HKI | Dashboard',
   description: 'Manajemen Pengajuan Data Hak Kekayaan Intelektual',
 }
-
-// ✅ Tetap 'force-dynamic' untuk memastikan autentikasi berjalan di setiap request.
 export const dynamic = 'force-dynamic'
 
-/**
- * ✅ Mengambil data user dan profil dengan React `cache`.
- * Ini memastikan bahwa query ke Supabase hanya terjadi SEKALI per request,
- * bahkan jika fungsi ini dipanggil di beberapa tempat (layout, page, dll).
- * Ini adalah optimasi performa kunci di App Router.
- */
 const getUserProfile = cache(async () => {
-  const cookieStore = cookies()
-  const supabase = createClient(cookieStore)
+  const supabase = await createClient()
 
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser()
   if (userError || !user) {
-    // Jika tidak ada user, langsung redirect tanpa perlu proses lebih lanjut.
     redirect('/login')
   }
 
@@ -43,7 +33,6 @@ const getUserProfile = cache(async () => {
     .single()
 
   if (profileError) {
-    // Melempar error agar ditangkap oleh Error Boundary atau blok try-catch
     throw new Error(
       `Kesalahan database saat mengambil profil: ${profileError.message}`
     )
@@ -87,19 +76,13 @@ export default async function DashboardLayout({
   children: ReactNode
 }) {
   try {
-    const { profile } = await getUserProfile()
-
-    // ✅ Logika otorisasi disederhanakan.
-    // Jika peran bukan 'admin', redirect dengan pesan error.
+    const { profile, user } = await getUserProfile()
     if (profile.role !== 'admin') {
       redirect('/dashboard?error=Akses_Ditolak')
     }
 
-    // Jika semua validasi lolos, render layout dengan children (halaman).
-    return <AdminLayout>{children}</AdminLayout>
+    return <AdminLayout user={user}>{children}</AdminLayout>
   } catch (error: any) {
-    // Menangkap semua kemungkinan error dari `getUserProfile`
-    // dan menampilkannya dengan UI yang sesuai.
     let errorContent
     if (error.message.includes('Akses_Ditolak')) {
       errorContent = (
@@ -119,7 +102,6 @@ export default async function DashboardLayout({
         />
       )
     }
-    // Tetap bungkus error display dengan AdminLayout agar konsisten
     return <AdminLayout>{errorContent}</AdminLayout>
   }
 }

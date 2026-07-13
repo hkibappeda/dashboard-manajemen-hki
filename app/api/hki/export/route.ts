@@ -1,17 +1,13 @@
 // app/api/hki/export/route.ts
-
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import ExcelJS from 'exceljs'
 import { createClient } from '@/utils/supabase/server'
-import { Database } from '@/lib/database.types' // ✅ Perbaikan: Impor tipe Database untuk type safety
+import { Database } from '@/lib/database.types'
 import { Readable } from 'stream'
 
 export const dynamic = 'force-dynamic'
-// ✅ Perbaikan: Tetap gunakan runtime nodejs karena ketergantungan pada ExcelJS
 export const runtime = 'nodejs'
 
-// ✅ Perbaikan: Tipe data yang lebih spesifik untuk hasil query
 type HKIExportData = {
   nama_hki: string | null
   jenis_produk: string | null
@@ -24,7 +20,6 @@ type HKIExportData = {
   kelas: { id_kelas: number; nama_kelas: string; tipe: string } | null
 }
 
-// ✅ Perbaikan: Kolom didefinisikan sekali dengan tipe yang kuat
 const EXPORT_COLUMNS = [
   { key: 'nama_hki', label: 'Nama HKI' },
   { key: 'jenis_produk', label: 'Jenis Produk' },
@@ -36,14 +31,10 @@ const EXPORT_COLUMNS = [
   { key: 'tahun_fasilitasi', label: 'Tahun Fasilitasi' },
   { key: 'nama_status', label: 'Status' },
   { key: 'keterangan', label: 'Keterangan' },
-] as const // Gunakan 'as const' untuk tipe yang lebih ketat
-
+] as const
 type NormalizedRow = Record<(typeof EXPORT_COLUMNS)[number]['key'], string | number | null>
 
-/**
- * ✅ Perbaikan: Fungsi otorisasi yang diekstraksi untuk penggunaan kembali.
- */
-async function authorizeAdmin(supabase: ReturnType<typeof createClient>) {
+async function authorizeAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user }, } = await supabase.auth.getUser()
   if (!user) {
     throw new Error('Tidak terautentikasi')
@@ -58,9 +49,6 @@ async function authorizeAdmin(supabase: ReturnType<typeof createClient>) {
   }
 }
 
-/**
- * ✅ Perbaikan: Normalisasi data menjadi fungsi terpisah.
- */
 function normalizeHkiData(data: HKIExportData[]): NormalizedRow[] {
   return data.map((row) => ({
     nama_hki: row.nama_hki,
@@ -86,14 +74,11 @@ function escapeCsvValue(value: any): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient(cookies())
+    const supabase = await createClient()
     await authorizeAdmin(supabase)
 
     const { searchParams } = request.nextUrl
     const format = (searchParams.get('format') || 'xlsx').toLowerCase()
-    
-    // ✅ Perbaikan: Gunakan Supabase RPC 'search_hki' untuk pencarian yang lebih konsisten dan efisien
-    // (Asumsi RPC ini sudah dibuat di database Anda seperti yang direkomendasikan sebelumnya)
     const search = searchParams.get('search')
     const jenisId = searchParams.get('jenisId')
     const statusId = searchParams.get('statusId')
@@ -110,7 +95,7 @@ export async function GET(request: NextRequest) {
         { count: 'exact' }
     )
 
-    if (search) query.ilike('nama_hki', `%${search}%`) // Untuk saat ini, kita pertahankan .ilike() jika RPC belum ada
+    if (search) query.ilike('nama_hki', `%${search}%`) 
     if (jenisId) query.eq('id_jenis_hki', Number(jenisId))
     if (statusId) query.eq('id_status', Number(statusId))
     if (year) query.eq('tahun_fasilitasi', Number(year))
@@ -126,10 +111,7 @@ export async function GET(request: NextRequest) {
     const normalizedData = normalizeHkiData(data as HKIExportData[])
     const filename = `hki-export_${new Date().toISOString().split('T')[0]}`
 
-    // --- PEMBUATAN FILE ---
-
     if (format === 'csv') {
-      // ✅ Perbaikan: Implementasi streaming untuk CSV
       const stream = new Readable({
           read() {
               this.push(EXPORT_COLUMNS.map(c => c.label).join(',') + '\n');
@@ -137,7 +119,7 @@ export async function GET(request: NextRequest) {
                   const csvRow = EXPORT_COLUMNS.map(col => escapeCsvValue(row[col.key])).join(',');
                   this.push(csvRow + '\n');
               }
-              this.push(null); // Sinyal akhir stream
+              this.push(null); 
           }
       });
 
@@ -151,7 +133,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (format === 'xlsx') {
-      // ✅ Perbaikan: Batas ekspor Excel diperketat untuk Vercel Free Plan
       if (count && count > 2000) {
         return NextResponse.json({ error: `Data terlalu besar (${count} baris) untuk ekspor Excel. Gunakan format CSV atau persempit filter Anda.` }, { status: 413 });
       }

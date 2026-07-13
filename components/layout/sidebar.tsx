@@ -1,31 +1,27 @@
 // components/layout/sidebar.tsx
 'use client'
 
-// PERBAIKAN: Menambahkan 'memo', 'useRef', dan 'useCallback' ke dalam import dari React
 import React, {
   useEffect,
-  useMemo,
   useRef,
-  useState,
   memo,
-  useCallback,
 } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home,
   FileText,
-  LogOut,
   Settings,
   BarChart3,
   Users,
   Database,
+  LogOut,
   type LucideIcon,
 } from 'lucide-react'
+import { signOutAction } from '@/app/actions/auth'
 import { User } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase-browser'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -40,8 +36,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { toast } from 'sonner'
 import {
   Tooltip,
   TooltipProvider,
@@ -49,7 +43,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-// --- Tipe & Data Navigasi ---
 interface NavItem {
   name: string
   href: string
@@ -73,11 +66,8 @@ const managementNavigation: NavItem[] = [
     href: '/dashboard/manajemen-pengguna',
     icon: Users,
   },
-  // PERBAIKAN: Mengarahkan ke /dashboard/pengaturan agar konsisten
   { name: 'Pengaturan', href: '/dashboard/pengaturan', icon: Settings },
 ]
-
-// --- Komponen Anak yang Dioptimalkan ---
 
 const SidebarLink = memo(({ item }: { item: NavItem }) => {
   const pathname = usePathname()
@@ -87,17 +77,12 @@ const SidebarLink = memo(({ item }: { item: NavItem }) => {
       : pathname.startsWith(item.href)
 
   return (
-    <motion.li
-      // IMPROVE: Animasi masuk untuk setiap item menu
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-    >
+    <li>
       <Link
         href={item.href}
         className={cn(
           'relative flex items-center gap-3 rounded-md px-4 py-2.5 font-medium transition-all duration-200',
-          'text-slate-400 hover:bg-slate-800/80 hover:text-white', // Tema yang Anda sukai dipertahankan
+          'text-slate-400 hover:bg-slate-800/80 hover:text-white', 
           isActive &&
             'rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
         )}
@@ -105,70 +90,17 @@ const SidebarLink = memo(({ item }: { item: NavItem }) => {
         <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
         <span className="truncate">{item.name}</span>
         {isActive && (
-          // IMPROVE: Indikator aktif dianimasikan dengan `framer-motion`
-          <motion.span
-            layoutId="active-sidebar-indicator"
-            className="absolute left-0 top-0 h-full w-1 rounded-r-md bg-blue-300"
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          />
+          <span className="absolute left-0 top-0 h-full w-1 rounded-r-md bg-blue-300" />
         )}
       </Link>
-    </motion.li>
+    </li>
   )
 })
 SidebarLink.displayName = 'SidebarLink'
 
-const UserProfileSection = memo(function UserProfileSection() {
-  const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
-      setIsLoading(false)
-    }
-    fetchUser()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null)
-      if (!session) setIsLoading(false)
-    })
-    return () => subscription.unsubscribe()
-  }, [supabase])
-
-  const handleLogout = useCallback(async () => {
-    const toastId = toast.loading('Sedang keluar...')
-    try {
-      await supabase.auth.signOut()
-      toast.success('Berhasil keluar!', { id: toastId })
-      router.push('/login')
-    } catch (err) {
-      console.error('❌ Error saat logout:', err)
-      toast.error('Gagal keluar, coba lagi.', { id: toastId })
-    }
-  }, [router, supabase])
-
-  const getInitials = (email?: string) =>
+const UserProfileSection = memo(function UserProfileSection({ user }: { user?: User | null }) {
+  const getInitials = (email?: string | null) =>
     email ? email.charAt(0).toUpperCase() : '?'
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-10 w-10 rounded-full bg-slate-700" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-3/4 bg-slate-700" />
-          <Skeleton className="h-3 w-1/2 bg-slate-700" />
-        </div>
-      </div>
-    )
-  }
 
   if (!user) return null
 
@@ -214,12 +146,14 @@ const UserProfileSection = memo(function UserProfileSection() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleLogout}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              Ya, Keluar
-            </AlertDialogAction>
+            <form action={signOutAction}>
+              <AlertDialogAction
+                type="submit"
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Ya, Keluar
+              </AlertDialogAction>
+            </form>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -228,23 +162,32 @@ const UserProfileSection = memo(function UserProfileSection() {
 })
 UserProfileSection.displayName = 'UserProfileSection'
 
-const SidebarContent = memo(function SidebarContent() {
+const SidebarContent = memo(function SidebarContent({ user }: { user?: User | null }) {
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-slate-900 to-slate-950 text-white">
       <div className="flex h-20 items-center border-b border-slate-700/50 px-4">
         <Link
           href="/dashboard"
-          className="flex items-center gap-3 font-semibold transition-transform hover:scale-105"
+          className="flex items-center gap-3 transition-transform hover:scale-105"
         >
-          <Image
-            src="/logo_sleman.png"
-            alt="Logo Sleman"
-            width={44}
-            height={44}
-            className="shrink-0"
-            priority
-          />
-          <span className="text-xl font-bold">Panel Dashboard</span>
+          <div className="rounded-lg bg-white/5 p-1.5 shadow-inner backdrop-blur-sm">
+            <Image
+              src="/logo_sleman.png"
+              alt="Logo Sleman"
+              width={40}
+              height={40}
+              className="shrink-0"
+              priority
+            />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-base font-bold leading-tight tracking-wide text-white">
+              Manajemen Data
+            </span>
+            <span className="text-sm font-medium text-blue-400">
+              Pengajuan Fasilitasi HKI
+            </span>
+          </div>
         </Link>
       </div>
 
@@ -267,20 +210,20 @@ const SidebarContent = memo(function SidebarContent() {
       </nav>
 
       <div className="mt-auto border-t border-slate-700/50 p-4">
-        <UserProfileSection />
+        <UserProfileSection user={user} />
       </div>
     </div>
   )
 })
 SidebarContent.displayName = 'SidebarContent'
 
-// --- Komponen Wrapper Utama ---
 interface SidebarProps {
   sidebarOpen: boolean
   setSidebarOpen: (val: boolean) => void
+  user?: User | null
 }
 
-export const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
+export const Sidebar = ({ sidebarOpen, setSidebarOpen, user }: SidebarProps) => {
   const sidebarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -327,11 +270,10 @@ export const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
             initial="closed"
             animate="open"
             exit="closed"
-            // IMPROVE: Menggunakan transisi 'spring' untuk efek yang lebih natural
             transition={{ type: 'spring', stiffness: 400, damping: 40 }}
             className="fixed inset-y-0 left-0 z-40 flex w-72 flex-col"
           >
-            <SidebarContent />
+            <SidebarContent user={user} />
           </motion.aside>
         </>
       )}

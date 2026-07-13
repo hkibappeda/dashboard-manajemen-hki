@@ -11,8 +11,8 @@ import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useHkiRealtime } from '@/hooks/useHkiRealtime'
+import { bulkDeleteHKI } from '@/app/actions/hki-actions'
 
-// Gunakan dynamic import untuk komponen berat (Modal) agar tidak membebani loading awal
 const EditHKIModal = dynamic(() =>
   import('@/components/hki/edit-hki-modal').then((mod) => mod.EditHKIModal)
 )
@@ -23,7 +23,6 @@ const ViewHKIModal = dynamic(() =>
   import('@/components/hki/view-hki-modal').then((mod) => mod.ViewHKIModal)
 )
 
-// --- Tipe dan Interface ---
 interface HKIClientPageProps {
   formOptions: Readonly<FormOptions>
   error: string | null
@@ -35,7 +34,6 @@ type ModalState =
   | { type: 'view'; entry: HKIEntry }
   | null
 
-// --- Fungsi Helper & Komponen UI Statis ---
 const fetchHkiData = async (
   searchParams: URLSearchParams
 ): Promise<HkiQueryData> => {
@@ -88,8 +86,8 @@ const PageHeader = ({
 
   return (
     <div>
-      <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-        Manajemen Data Pengajuan Fasilitasi HKI
+      <h1 className="text-3xl font-bold tracking-tight mb-2 text-foreground">
+        Arsip Data Pengajuan Fasilitasi HKI
       </h1>
       {totalCount > 0 && (
         <p className="mt-2 text-muted-foreground">
@@ -100,7 +98,6 @@ const PageHeader = ({
   )
 }
 
-// --- Komponen Utama ---
 export function HKIClientPage({
   formOptions,
   error: serverError,
@@ -110,10 +107,8 @@ export function HKIClientPage({
 
   const [modalState, setModalState] = useState<ModalState>(null)
 
-  // Berlangganan update realtime dari Supabase
   useHkiRealtime()
 
-  // Kunci query yang dinamis berdasarkan parameter URL, penting untuk caching yang benar
   const queryKey = useMemo(
     () => ['hkiData', searchParams.toString()],
     [searchParams]
@@ -123,16 +118,14 @@ export function HKIClientPage({
     useQuery<HkiQueryData>({
       queryKey,
       queryFn: () => fetchHkiData(new URLSearchParams(searchParams.toString())),
-      placeholderData: (previousData) => previousData, // Menjaga data lama terlihat saat fetching baru
-      retry: 1, // Hanya coba lagi sekali jika gagal
+      placeholderData: (previousData) => previousData, 
+      retry: 1, 
     })
 
   const { data: hkiData = [], totalCount = 0 } = data || {}
 
-  // Hook terpusat untuk semua logika mutasi data
   const useHkiMutations = () => {
     const onMutationError = (err: Error, message: string, context: any) => {
-      // Jika mutasi gagal, kembalikan UI ke keadaan semula (rollback)
       if (context?.previousData) {
         queryClient.setQueryData(queryKey, context.previousData)
       }
@@ -141,17 +134,8 @@ export function HKIClientPage({
 
     const deleteMutation = useMutation({
       mutationFn: async (ids: number[]) => {
-        const response = await fetch('/api/hki/bulk-delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ids }),
-        })
-        const result = await response.json()
-        if (!response.ok)
-          throw new Error(result.error || 'Gagal menghapus entri.')
-        return result
+        return await bulkDeleteHKI(ids)
       },
-      // ✅ PERBAIKAN: onMutate sekarang menyimpan nama data yang akan dihapus
       onMutate: async (idsToDelete: number[]) => {
         await queryClient.cancelQueries({ queryKey })
         const previousData = queryClient.getQueryData<HkiQueryData>(queryKey)
@@ -161,7 +145,6 @@ export function HKIClientPage({
         )
         const deletedNames = deletedItems?.map((item) => item.nama_hki)
 
-        // Secara optimis hapus item dari UI
         queryClient.setQueryData<HkiQueryData>(queryKey, (old) =>
           old
             ? {
@@ -175,7 +158,6 @@ export function HKIClientPage({
         )
         return { previousData, deletedNames }
       },
-      // ✅ PERBAIKAN: onSuccess sekarang menampilkan notifikasi yang lebih spesifik
       onSuccess: (data, _variables, context) => {
         if (context?.deletedNames && context.deletedNames.length === 1) {
           toast.success(`Data "${context.deletedNames[0]}" berhasil dihapus.`)
@@ -216,7 +198,6 @@ export function HKIClientPage({
       onMutate: async ({ entryId, newStatusId }) => {
         await queryClient.cancelQueries({ queryKey })
         const previousData = queryClient.getQueryData<HkiQueryData>(queryKey)
-        // Secara optimis perbarui status di UI
         queryClient.setQueryData<HkiQueryData>(queryKey, (old) => {
           if (!old) return { data: [], totalCount: 0 }
           return {
@@ -259,12 +240,11 @@ export function HKIClientPage({
   const pagination = useMemo(
     () => ({
       pageIndex: Number(searchParams.get('page') ?? 1) - 1,
-      pageSize: Number(searchParams.get('pageSize') ?? 50),
+      pageSize: Number(searchParams.get('pageSize') ?? 20),
     }),
     [searchParams]
   )
 
-  // Penanganan error jika data master gagal dimuat dari server
   if (serverError) {
     return (
       <ServerErrorDisplay
@@ -274,7 +254,6 @@ export function HKIClientPage({
     )
   }
 
-  // Penanganan error saat fetching data HKI
   if (error) {
     return (
       <ServerErrorDisplay
@@ -286,13 +265,6 @@ export function HKIClientPage({
 
   return (
     <div className="space-y-6">
-      {/* --- UI FEEDBACK: PROGRESS BAR --- */}
-      {isFetching && !isLoading && (
-        <div className="fixed top-0 left-0 right-0 h-1 z-50">
-          <div className="h-full bg-primary/50 animate-pulse w-full" />
-        </div>
-      )}
-
       <PageHeader
         totalCount={totalCount}
         pageSize={pagination.pageSize}
@@ -310,9 +282,9 @@ export function HKIClientPage({
         onDelete={deleteMutation.mutate}
         isDeleting={deleteMutation.isPending}
         isLoading={isLoading}
+        isFetching={isFetching}
       />
 
-      {/* Gunakan Suspense untuk lazy loading modal agar tidak memperlambat render awal */}
       <Suspense fallback={null}>
         {modalState?.type === 'edit' && (
           <EditHKIModal

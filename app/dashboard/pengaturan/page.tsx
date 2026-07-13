@@ -16,7 +16,6 @@ import { Loader2, Save, User } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
-// Skema validasi untuk form
 const settingsSchema = z.object({
   full_name: z.string().min(3, { message: 'Nama lengkap minimal 3 karakter.' }),
   email: z.string().email(),
@@ -42,7 +41,6 @@ export default function SettingsPage() {
     },
   });
 
-  // Mengambil data pengguna saat komponen dimuat
   useEffect(() => {
     const fetchUser = async () => {
       setIsLoading(true);
@@ -75,7 +73,7 @@ export default function SettingsPage() {
       }
 
       toast.success('Profil berhasil diperbarui!', { id: toastId });
-      form.reset({ ...form.getValues(), password: '' }); // Reset password field
+      form.reset({ ...form.getValues(), password: '' }); 
     } catch (err: any) {
       toast.error(err.message, { id: toastId });
     }

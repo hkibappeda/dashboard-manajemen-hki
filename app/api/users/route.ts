@@ -1,9 +1,9 @@
 // app/api/users/route.ts
-import { createClient as createServerClient } from '@/utils/supabase/server'
+import { createClient } from '@/utils/supabase/server'
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-import { cookies } from 'next/headers'
+
 import { authorizeAdmin, AuthError } from '@/lib/auth/server'
 
 const newUserSchema = z.object({
@@ -13,12 +13,9 @@ const newUserSchema = z.object({
   role: z.enum(['admin', 'user']).optional().default('user'),
 })
 
-/**
- * GET: Mengambil daftar semua pengguna (hanya admin).
- */
 export async function GET() {
   try {
-    const supabase = createServerClient(cookies())
+    const supabase = await createClient()
     await authorizeAdmin(supabase)
 
     const supabaseAdmin = createAdminClient(
@@ -63,11 +60,8 @@ export async function GET() {
   }
 }
 
-/**
- * POST: Membuat pengguna baru (hanya admin).
- */
 export async function POST(request: NextRequest) {
-  const supabase = createServerClient(cookies())
+  const supabase = await createClient()
   try {
     await authorizeAdmin(supabase)
 

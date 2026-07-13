@@ -75,7 +75,6 @@ export function HkiChart({ data }: HkiChartProps) {
             cursor={{ fill: 'hsl(var(--accent))', radius: 4 }}
             content={
               <ChartTooltipContent
-                // ✅ PERBAIKAN: Mengambil tahun langsung dari 'payload' yang berisi data lengkap
                 labelFormatter={(_, payload) => {
                   return `Tahun ${payload[0]?.payload.year}`
                 }}
