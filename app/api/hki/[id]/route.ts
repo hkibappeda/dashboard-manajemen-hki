@@ -169,6 +169,7 @@ export async function PATCH(
       ...hkiFields,
       id_pemohon: pemohonData.id_pemohon,
       sertifikat_pdf: finalFilePath,
+      updated_by: user.id,
     }
 
     const { error: hkiUpdateError } = await supabase

@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -39,6 +39,7 @@ export type Database = {
           sertifikat_pdf: string | null
           tahun_fasilitasi: number | null
           updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           created_at?: string | null
@@ -54,6 +55,7 @@ export type Database = {
           sertifikat_pdf?: string | null
           tahun_fasilitasi?: number | null
           updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           created_at?: string | null
@@ -69,6 +71,7 @@ export type Database = {
           sertifikat_pdf?: string | null
           tahun_fasilitasi?: number | null
           updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -106,6 +109,58 @@ export type Database = {
             referencedRelation: "status_hki"
             referencedColumns: ["id_status"]
           },
+          {
+            foreignKeyName: "hki_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hki_history: {
+        Row: {
+          id: string
+          hki_id: number
+          action: string
+          old_data: Json | null
+          new_data: Json | null
+          changed_by: string | null
+          changed_at: string | null
+        }
+        Insert: {
+          id?: string
+          hki_id: number
+          action: string
+          old_data?: Json | null
+          new_data?: Json | null
+          changed_by?: string | null
+          changed_at?: string | null
+        }
+        Update: {
+          id?: string
+          hki_id?: number
+          action?: string
+          old_data?: Json | null
+          new_data?: Json | null
+          changed_by?: string | null
+          changed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hki_history_hki_id_fkey"
+            columns: ["hki_id"]
+            isOneToOne: false
+            referencedRelation: "hki"
+            referencedColumns: ["id_hki"]
+          },
+          {
+            foreignKeyName: "hki_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
       }
       jenis_hki: {

@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { HKIEntry } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import {
@@ -31,6 +32,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getStatusStyle } from './hki-utils'
+import { HKIHistoryTab } from './hki-history-tab'
 import { useMutation } from '@tanstack/react-query'
 import { motion, Variants, AnimatePresence } from 'framer-motion'
 
@@ -170,7 +172,7 @@ export const ViewHKIModal = memo(
           </motion.div>
 
           <motion.div
-            className="flex-1 overflow-y-auto px-6 py-4 space-y-6"
+            className="flex-1 overflow-hidden flex flex-col"
             variants={{
               hidden: { opacity: 0 },
               visible: {
@@ -181,7 +183,16 @@ export const ViewHKIModal = memo(
             initial="hidden"
             animate="visible"
           >
-            <motion.div variants={itemVariants} className="space-y-4">
+            <Tabs defaultValue="detail" className="flex-1 flex flex-col min-h-0">
+              <div className="px-6 pt-2">
+                <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+                  <TabsTrigger value="detail">Detail Informasi</TabsTrigger>
+                  <TabsTrigger value="history">Riwayat Perubahan</TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="detail" className="flex-1 overflow-y-auto px-6 py-4 space-y-6 mt-0">
+                <motion.div variants={itemVariants} className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">
                 Detail Properti HKI
               </h3>
@@ -325,6 +336,14 @@ export const ViewHKIModal = memo(
                 )}
               </AnimatePresence>
             </div>
+            </TabsContent>
+
+            <TabsContent value="history" className="flex-1 overflow-y-auto px-6 py-4 mt-0">
+              <motion.div variants={itemVariants}>
+                <HKIHistoryTab hkiId={entry.id_hki} />
+              </motion.div>
+            </TabsContent>
+          </Tabs>
           </motion.div>
 
           <motion.div

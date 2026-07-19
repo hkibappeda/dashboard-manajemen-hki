@@ -44,6 +44,18 @@ export interface HKIEntry {
   status_hki: StatusHKI | null
   pengusul: Pengusul | null
   kelas: KelasHKI | null
+  updated_by?: string | null
+}
+
+export interface HKIHistory {
+  id: string
+  hki_id: number
+  action: 'INSERT' | 'UPDATE' | 'DELETE'
+  old_data: any | null
+  new_data: any | null
+  changed_by: string | null
+  changed_at: string
+  profile: UserProfile | null // Joined from profiles
 }
 
 // Tipe data untuk pengguna yang digabungkan dari auth.users dan public.profiles

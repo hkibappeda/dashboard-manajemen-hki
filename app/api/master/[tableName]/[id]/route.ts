@@ -21,7 +21,8 @@ const ID_COLUMN_MAP: Record<TableName, string> = {
   hki: 'id_hki',
   pemohon: 'id_pemohon',
   profiles: 'id',
-  status_hki: 'id_status'
+  status_hki: 'id_status',
+  hki_history: 'id'
 }
 
 async function isAdmin(supabase: any): Promise<boolean> {
