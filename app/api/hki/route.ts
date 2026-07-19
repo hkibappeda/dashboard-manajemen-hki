@@ -190,40 +190,34 @@ export async function POST(request: NextRequest) {
 
     const pemohonId = await getPemohonId(supabase, nama_pemohon, alamat || null)
 
-    const hkiRecord = { ...hkiFields, id_pemohon: pemohonId }
+    let finalFilePath: string | null = null;
+    const file = formData.get('file') as File | null;
+
+    if (file && file.size > 0) {
+      finalFilePath = `public/${user.id}-${uuidv4()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from(HKI_BUCKET)
+        .upload(finalFilePath, file);
+
+      if (uploadError) {
+        throw new Error(`Upload file gagal: ${uploadError.message}`);
+      }
+    }
+
+    const hkiRecord = { ...hkiFields, id_pemohon: pemohonId, sertifikat_pdf: finalFilePath, updated_by: user.id }
+    
     const { data: newHki, error: insertError } = await supabase
       .from(HKI_TABLE)
       .insert(hkiRecord)
       .select('id_hki')
       .single()
 
-    if (insertError)
+    if (insertError) {
+      // Rollback file upload if database insert fails
+      if (finalFilePath) {
+        await supabase.storage.from(HKI_BUCKET).remove([finalFilePath]);
+      }
       throw new Error(`Gagal menyimpan data HKI: ${insertError.message}`)
-
-    const file = formData.get('file') as File | null
-    if (file && file.size > 0) {
-      const filePath = `public/${user.id}-${uuidv4()}.${file.name.split('.').pop()}`
-      const { error: uploadError } = await supabase.storage
-        .from(HKI_BUCKET)
-        .upload(filePath, file)
-
-      if (uploadError) {
-        await supabase.from(HKI_TABLE).delete().eq('id_hki', newHki.id_hki)
-        throw new Error(`Upload file gagal: ${uploadError.message}`)
-      }
-
-      const { error: updateError } = await supabase
-        .from(HKI_TABLE)
-        .update({ sertifikat_pdf: filePath })
-        .eq('id_hki', newHki.id_hki)
-
-      if (updateError) {
-        await supabase.storage.from(HKI_BUCKET).remove([filePath])
-        await supabase.from(HKI_TABLE).delete().eq('id_hki', newHki.id_hki)
-        throw new Error(
-          `Gagal menautkan file sertifikat: ${updateError.message}`
-        )
-      }
     }
 
     const { data: finalData, error: finalFetchError } = await supabase
@@ -234,8 +228,9 @@ export async function POST(request: NextRequest) {
       .eq('id_hki', newHki.id_hki)
       .single()
 
-    if (finalFetchError)
+    if (finalFetchError) {
       throw new Error('Gagal mengambil data yang baru dibuat.')
+    }
 
     return NextResponse.json(
       { success: true, data: finalData },

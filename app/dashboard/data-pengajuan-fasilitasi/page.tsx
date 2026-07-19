@@ -14,39 +14,29 @@ type KelasOptionRaw = { id_kelas: number; nomor_kelas: number; nama_kelas: strin
 
 const getFormOptions = cache(async (supabase: SupabaseClient<Database>): Promise<FormOptions> => {
   try {
-    const [
-      { data: jenisData, error: jenisError },
-      { data: statusData, error: statusError },
-      { data: pengusulData, error: pengusulError },
-      { data: kelasData, error: kelasError },
-      { data: rpcData, error: rpcError } 
-    ] = await Promise.all([
-      supabase.from('jenis_hki').select('id_jenis_hki, nama_jenis_hki, is_active').order('id_jenis_hki'),
-      supabase.from('status_hki').select('id_status, nama_status').order('id_status'),
-      supabase.from('pengusul').select('id_pengusul, nama_opd').order('nama_opd'),
-      supabase.from('kelas_hki').select('id_kelas, nomor_kelas, nama_kelas, tipe, is_active').order('nomor_kelas'),
-      supabase.rpc('get_all_form_options')
-    ]);
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_all_form_options');
 
-    if (jenisError) throw jenisError;
-    if (statusError) throw statusError;
-    if (pengusulError) throw pengusulError;
-    if (kelasError) throw kelasError;
+    if (rpcError) throw rpcError;
+
+    const jenisData = rpcData?.jenis_options || [];
+    const statusData = rpcData?.status_options || [];
+    const pengusulData = (rpcData?.pengusul_options || []) as PengusulOptionRaw[];
+    const kelasData = (rpcData?.kelas_options || []) as KelasOptionRaw[];
 
     return {
-      jenisOptions: jenisData || [],
-      statusOptions: statusData || [],
+      jenisOptions: jenisData,
+      statusOptions: statusData,
       tahunOptions: rpcData?.tahun_options || [],
-      pengusulOptions: pengusulData?.map((p) => ({
+      pengusulOptions: pengusulData.map((p) => ({
         value: String(p.id_pengusul),
         label: p.nama_opd,
-      })) || [],
-      kelasOptions: kelasData?.map((k) => ({
+      })),
+      kelasOptions: kelasData.map((k) => ({
         value: String(k.id_kelas),
         label: `Kelas ${k.nomor_kelas} (${k.tipe}) - "${k.nama_kelas}"`,
         is_active: k.is_active,
         nomor_kelas: k.nomor_kelas
-      })) || [],
+      })),
     }
   } catch (error: any) {
     console.error('Gagal memuat form options:', error.message);

@@ -39,10 +39,13 @@ export async function PATCH(
     }
     const { id: hkiId, statusId } = validationResult.data
 
+    const { data: { user } } = await supabase.auth.getUser()
+    
     const { data: updatedData, error: updateError } = await supabase
       .from('hki')
       .update({
         id_status: statusId,
+        updated_by: user?.id,
         updated_at: new Date().toISOString(),
       })
       .eq('id_hki', hkiId)

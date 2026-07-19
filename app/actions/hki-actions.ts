@@ -47,7 +47,7 @@ export async function bulkDeleteHKI(ids: number[]) {
 
     if (deleteError) {
       console.error('Supabase delete error (bulk-delete):', deleteError)
-      throw new Error('Gagal menghapus entri HKI dari database.')
+      throw new Error(`Gagal menghapus entri HKI dari database: ${deleteError.message || deleteError.details || JSON.stringify(deleteError)}`)
     }
     if (entriesToDelete && entriesToDelete.length > 0) {
       const filePaths = entriesToDelete
@@ -75,6 +75,9 @@ export async function bulkDeleteHKI(ids: number[]) {
     }
   } catch (error: any) {
     console.error('Unexpected bulk delete error:', error)
-    throw new Error(error.message || 'Terjadi kesalahan pada server.')
+    return {
+      success: false,
+      error: error.message || 'Terjadi kesalahan pada server saat menghapus data.',
+    }
   }
 }

@@ -134,7 +134,11 @@ export function HKIClientPage({
 
     const deleteMutation = useMutation({
       mutationFn: async (ids: number[]) => {
-        return await bulkDeleteHKI(ids)
+        const result = await bulkDeleteHKI(ids)
+        if (!result.success) {
+          throw new Error(result.error)
+        }
+        return result
       },
       onMutate: async (idsToDelete: number[]) => {
         await queryClient.cancelQueries({ queryKey })

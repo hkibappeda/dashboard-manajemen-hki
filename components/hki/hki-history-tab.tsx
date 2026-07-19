@@ -72,6 +72,20 @@ export function HKIHistoryTab({ hkiId }: HKIHistoryTabProps) {
 
           const userName = item.profile?.full_name || item.profile?.email || 'Sistem / Tidak diketahui'
 
+          // Get changed fields for updates
+          let changedFields: string[] = []
+          if (isUpdate && item.old_data && item.new_data) {
+            const oldData = item.old_data as Record<string, any>
+            const newData = item.new_data as Record<string, any>
+            const excludedKeys = ['updated_at', 'updated_by', 'created_at'] // fields to ignore
+            
+            Object.keys(newData).forEach(key => {
+              if (!excludedKeys.includes(key) && oldData[key] !== newData[key]) {
+                changedFields.push(key)
+              }
+            })
+          }
+
           return (
             <div key={item.id} className="relative pl-6 md:pl-8">
               <div
@@ -89,6 +103,11 @@ export function HKIHistoryTab({ hkiId }: HKIHistoryTabProps) {
                     {isInsert ? 'membuat data ini' : isUpdate ? 'memperbarui data ini' : 'menghapus data ini'}
                   </span>
                 </div>
+                {changedFields.length > 0 && (
+                  <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-md my-1 border w-fit">
+                    Mengubah: <span className="font-medium text-foreground">{changedFields.join(', ')}</span>
+                  </div>
+                )}
                 <time className="text-xs text-muted-foreground font-medium">
                   {format(new Date(item.changed_at), 'd MMMM yyyy, HH:mm', { locale: id })}
                 </time>

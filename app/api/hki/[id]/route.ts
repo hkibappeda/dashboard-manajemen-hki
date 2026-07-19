@@ -236,20 +236,22 @@ export async function DELETE(
     if (findError)
       return apiError(`Data HKI dengan ID ${hkiId} tidak ditemukan.`, 404)
 
-    if (hkiData.sertifikat_pdf) {
-      const { error: storageError } = await supabase.storage
-        .from(HKI_BUCKET)
-        .remove([hkiData.sertifikat_pdf])
-      if (storageError)
-        throw new Error(`Gagal hapus file di storage: ${storageError.message}`)
-    }
-
     const { error: deleteError } = await supabase
       .from(HKI_TABLE)
       .delete()
       .eq('id_hki', hkiId)
+    
     if (deleteError)
       throw new Error(`Gagal menghapus data HKI: ${deleteError.message}`)
+
+    if (hkiData.sertifikat_pdf) {
+      const { error: storageError } = await supabase.storage
+        .from(HKI_BUCKET)
+        .remove([hkiData.sertifikat_pdf])
+      if (storageError) {
+        console.error(`Peringatan: Gagal menghapus file dari storage (${hkiData.sertifikat_pdf}): ${storageError.message}`)
+      }
+    }
 
     return NextResponse.json({
       success: true,
