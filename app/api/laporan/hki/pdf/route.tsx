@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
     const qrDataUri = await QRCode.toDataURL(verificationUrl, {
       width: 120,
       margin: 2,
+      errorCorrectionLevel: 'H'
     })
 
     // Read logo as base64 to ensure it renders reliably in the PDF regardless of path issues

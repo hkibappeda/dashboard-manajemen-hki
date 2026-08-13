@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
+import { VerifyAction } from '@/components/laporan/VerifyAction'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,19 +59,23 @@ export default async function BeritaAcaraPage() {
                   <TableHead>Aktivitas</TableHead>
                   <TableHead>Report Code</TableHead>
                   <TableHead>Metadata</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {!logs || logs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                       Belum ada riwayat aktivitas.
                     </TableCell>
                   </TableRow>
                 ) : (
                   logs.map((log) => {
                     const snapshot = log.user_snapshot as { name?: string; role?: string } | null
-                    const metadata = log.metadata as { year?: number; statusName?: string } | null
+                    const metadata = log.metadata as { year?: number; statusName?: string; file_hash?: string; filters?: any } | null
+                    const fileHash = metadata?.file_hash
+                    const hasFilters = metadata?.year !== undefined || metadata?.statusName !== undefined || metadata?.filters !== undefined
+                    
                     return (
                       <TableRow key={log.id}>
                         <TableCell className="whitespace-nowrap">
@@ -94,12 +99,17 @@ export default async function BeritaAcaraPage() {
                         <TableCell className="font-mono text-xs">
                           {log.report_code || '-'}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {metadata ? (
+                        <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                          {hasFilters ? (
                             <span>
-                              Tahun: {metadata.year || 'Semua'}, Status: {metadata.statusName || 'Semua'}
+                              Tahun: {metadata?.filters?.year || metadata?.year || 'Semua'}, Status: {metadata?.filters?.statusName || metadata?.statusName || 'Semua'}
                             </span>
                           ) : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {log.action === 'GENERATE_REPORT' && fileHash ? (
+                            <VerifyAction originalHash={fileHash} />
+                          ) : null}
                         </TableCell>
                       </TableRow>
                     )

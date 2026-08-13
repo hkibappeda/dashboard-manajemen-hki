@@ -274,12 +274,23 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
   },
   qrContainer: {
+    position: 'relative',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 2,
   },
   qrCode: {
     width: 54,
     height: 54,
+  },
+  qrCenterLogo: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    top: 20, // (54 - 14) / 2
+    left: 20, // (54 - 14) / 2
+    backgroundColor: '#ffffff',
+    padding: 1.5,
   },
   qrCaption: {
     fontSize: 6,
@@ -331,11 +342,13 @@ function FooterDokumen({
   generatedAt,
   reportCode,
   qrDataUri,
+  logoDataUri,
 }: {
   generatorName: string
   generatedAt: string
   reportCode: string
   qrDataUri: string
+  logoDataUri?: string
 }) {
   return (
     <View style={styles.footer} fixed>
@@ -362,6 +375,7 @@ function FooterDokumen({
       {qrDataUri && (
         <View style={styles.qrContainer}>
           <Image style={styles.qrCode} src={qrDataUri} />
+          {logoDataUri && <Image style={styles.qrCenterLogo} src={logoDataUri} />}
           <Text style={styles.qrCaption}>Verifikasi Keaslian{'\n'}Dokumen</Text>
         </View>
       )}
@@ -545,6 +559,7 @@ export function HKIReportPDF({
           generatedAt={generatedAt}
           reportCode={reportCode}
           qrDataUri={qrDataUri}
+          logoDataUri={logoDataUri}
         />
       </Page>
 
@@ -613,6 +628,7 @@ export function HKIReportPDF({
           generatedAt={generatedAt}
           reportCode={reportCode}
           qrDataUri={qrDataUri}
+          logoDataUri={logoDataUri}
         />
       </Page>
     </Document>

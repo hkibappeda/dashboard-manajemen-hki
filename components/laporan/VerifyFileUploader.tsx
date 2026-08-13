@@ -3,11 +3,14 @@
 import React, { useState } from 'react'
 import { Upload, CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 
+import { cn } from '@/lib/utils'
+
 interface VerifyFileUploaderProps {
   originalHash: string
+  standalone?: boolean
 }
 
-export function VerifyFileUploader({ originalHash }: VerifyFileUploaderProps) {
+export function VerifyFileUploader({ originalHash, standalone = false }: VerifyFileUploaderProps) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'valid' | 'invalid'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -44,13 +47,15 @@ export function VerifyFileUploader({ originalHash }: VerifyFileUploaderProps) {
   }
 
   return (
-    <div className="mt-8 border-t border-slate-200 pt-6">
+    <div className={cn(
+      !standalone && "mt-8 border-t border-slate-200 pt-6"
+    )}>
       <h3 className="text-sm font-semibold text-slate-700 mb-2">Cek Keaslian Softcopy PDF</h3>
       <p className="text-xs text-slate-500 mb-4">
         Jika Anda menerima dokumen ini dalam bentuk file digital (PDF), unggah di sini untuk mengecek apakah file tersebut masih 100% asli dan belum diedit (Anti-Manipulasi). File diproses aman di perangkat Anda tanpa dikirim ke server.
       </p>
 
-      <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-6 bg-slate-50 hover:bg-slate-100 transition-colors">
+      <div className="flex flex-col items-center justify-center border-2 border-dashed border-blue-200 rounded-xl p-6 sm:p-8 bg-blue-50/50 hover:bg-blue-50 transition-colors">
         {status === 'loading' ? (
           <div className="flex flex-col items-center">
             <Loader2 className="h-8 w-8 text-blue-500 animate-spin mb-2" />

@@ -72,8 +72,8 @@ export default async function VerifyReportPage(
     : `${nameParts[0].charAt(0)}***`
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-lg border-emerald-500/20">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-8 py-8 md:py-12">
+      <Card className="w-full max-w-lg mx-auto shadow-xl shadow-emerald-900/5 border-emerald-500/20">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
             <ShieldCheck className="h-8 w-8 text-emerald-600" />
