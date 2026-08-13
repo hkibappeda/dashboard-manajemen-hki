@@ -4,8 +4,7 @@ import { Database } from '@/lib/database.types'
 import { AlertTriangle, CheckCircle2, FileText, Search, ShieldCheck } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { format } from 'date-fns'
-import { id } from 'date-fns/locale'
+import { VerifyFileUploader } from '@/components/laporan/VerifyFileUploader'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +16,7 @@ async function getReportVerification(reportCode: string) {
 
   const { data, error } = await supabase
     .from('audit_logs')
-    .select('created_at, action, user_snapshot')
+    .select('created_at, action, user_snapshot, metadata')
     .eq('report_code', reportCode)
     .eq('action', 'GENERATE_REPORT')
     .single()
@@ -113,18 +112,44 @@ export default async function VerifyReportPage(
               <div>
                 <p className="text-sm font-medium text-slate-500">Dibuat Pada</p>
                 <p className="text-slate-900 font-medium">
-                  {format(generatedAt, "dd MMMM yyyy, HH:mm 'WIB'", { locale: id })}
+                  {generatedAt.toLocaleString('id-ID', {
+                    timeZone: 'Asia/Jakarta',
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })} WIB
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">Oleh: Admin ({maskedName})</p>
               </div>
             </div>
+
+            {reportData.metadata && (reportData.metadata as any).summary_snapshot && (
+              <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-100">
+                <div className="mt-0.5 bg-blue-50 p-2 rounded-md text-blue-600">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500">Ringkasan Data Asli</p>
+                  <p className="text-slate-900 font-medium">
+                    Total Pengajuan: {(reportData.metadata as any).summary_snapshot.total_pengajuan || 0} entri
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">Angka pada fisik dokumen harus sama persis dengan angka ini.</p>
+                </div>
+              </div>
+            )}
           </div>
 
           <Alert className="bg-slate-50 border-slate-200">
             <AlertDescription className="text-xs text-slate-500 leading-relaxed text-center">
-              Halaman ini hanya memvalidasi keaslian metadata pembuatan laporan dan tidak menampilkan isi data Hak Kekayaan Intelektual untuk menjaga kerahasiaan.
+              Halaman ini memvalidasi keaslian metadata pembuatan laporan. Pastikan Ringkasan Data Asli di atas sesuai dengan isi fisik dokumen untuk mencegah manipulasi.
             </AlertDescription>
           </Alert>
+
+          {reportData.metadata && (reportData.metadata as any).file_hash && (
+            <VerifyFileUploader originalHash={(reportData.metadata as any).file_hash} />
+          )}
         </CardContent>
       </Card>
     </div>

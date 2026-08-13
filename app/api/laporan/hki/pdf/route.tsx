@@ -9,6 +9,7 @@ import type { ReportFilters } from '@/lib/reports/hki-report-types'
 import { logAcceptConfidentiality, logGenerateReport } from '@/lib/audit/audit-service'
 import QRCode from 'qrcode'
 import React from 'react'
+import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
 
@@ -125,8 +126,18 @@ export async function POST(req: NextRequest) {
     }
     const pdfBuffer = Buffer.concat(chunks)
 
-    // After success, log GENERATE_REPORT
-    await logGenerateReport(user.id, userSnapshot, reportCode, filters)
+    // Create SHA-256 hash of the generated PDF for authenticity verification
+    const fileHash = crypto.createHash('sha256').update(pdfBuffer).digest('hex')
+
+    // After success, log GENERATE_REPORT with data snapshot for anti-tamper verification
+    const auditMetadata = {
+      filters,
+      file_hash: fileHash,
+      summary_snapshot: {
+        total_pengajuan: summary.total_pengajuan
+      }
+    }
+    await logGenerateReport(user.id, userSnapshot, reportCode, auditMetadata)
 
     const yearLabel = year ? `-${year}` : '-semua-tahun'
     const statusLabel = statusName
