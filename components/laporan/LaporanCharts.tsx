@@ -27,7 +27,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { TrendingUp, BookCheck, Copyright, FileSearch } from 'lucide-react'
+import { TrendingUp, BookCheck, Copyright, FileSearch, Filter } from 'lucide-react'
 import type { HKIReportSummary } from '@/lib/reports/hki-report-types'
 
 const STATUS_PALETTE = [
@@ -46,8 +46,13 @@ const BAR_PALETTE = [
   'hsl(var(--chart-5))',
 ]
 
+const BAR_MUTED = 'hsl(var(--muted-foreground) / 0.18)'
+
 interface LaporanChartsProps {
   summary: HKIReportSummary
+  activeYear: number | null
+  activeStatusId: number | null
+  activeStatusName: string | null
 }
 
 const EmptyChartState = ({ message = "Belum Ada Data" }: { message?: string }) => (
@@ -56,6 +61,15 @@ const EmptyChartState = ({ message = "Belum Ada Data" }: { message?: string }) =
     <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{message}</p>
   </div>
 )
+
+function FilterBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-full px-2 py-0.5">
+      <Filter className="h-3 w-3" />
+      {label}
+    </span>
+  )
+}
 
 const renderCustomLabel = ({
   cx,
@@ -94,7 +108,12 @@ const renderCustomLabel = ({
   )
 }
 
-export function LaporanCharts({ summary }: LaporanChartsProps) {
+export function LaporanCharts({
+  summary,
+  activeYear,
+  activeStatusId,
+  activeStatusName,
+}: LaporanChartsProps) {
   const yearChartConfig: ChartConfig = {
     total: { label: 'Jumlah Pengajuan', color: 'hsl(var(--chart-1))' },
   }
@@ -108,26 +127,45 @@ export function LaporanCharts({ summary }: LaporanChartsProps) {
       fill: STATUS_PALETTE[i % STATUS_PALETTE.length],
     }))
 
-  const jenisData = summary.by_jenis_hki.slice(0, 8)
+  const jenisData = summary.by_jenis_hki
+    .filter((j) => j.total > 0)
+    .slice(0, 8)
+
+  // ── Dynamic descriptions based on active filters ──
+  const yearChartDesc = activeStatusName
+    ? `Tren pengajuan berstatus "${activeStatusName}" per tahun.`
+    : 'Jumlah total pengajuan HKI yang difasilitasi setiap tahunnya.'
+
+  const statusChartDesc = activeYear
+    ? `Proporsi pengajuan pada tahun ${activeYear} berdasarkan status.`
+    : 'Proporsi pengajuan berdasarkan status saat ini.'
+
+  const jenisChartDesc =
+    activeYear && activeStatusName
+      ? `Jenis HKI untuk tahun ${activeYear}, status "${activeStatusName}".`
+      : activeYear
+        ? `Jenis HKI untuk tahun ${activeYear}.`
+        : activeStatusName
+          ? `Jenis HKI berstatus "${activeStatusName}".`
+          : 'Jumlah pengajuan berdasarkan jenis Hak Kekayaan Intelektual.'
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      {/* ── Bar Chart: Pengajuan per Tahun ── */}
       <Card className="lg:col-span-3 shadow-sm dark:border-gray-800">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="h-5 w-5 text-blue-600" />
             Pengajuan per Tahun
+            {activeStatusName && <FilterBadge label={activeStatusName} />}
           </CardTitle>
-          <CardDescription>
-            Jumlah total pengajuan HKI yang difasilitasi setiap tahunnya.
-          </CardDescription>
+          <CardDescription>{yearChartDesc}</CardDescription>
         </CardHeader>
         <CardContent>
           {sortedYearData.length === 0 ? (
             <EmptyChartState message="Belum ada data pengajuan per tahun." />
           ) : (
             <ChartContainer config={yearChartConfig} className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={sortedYearData}
                   margin={{ top: 30, right: 10, left: 0, bottom: 0 }}
@@ -146,23 +184,34 @@ export function LaporanCharts({ summary }: LaporanChartsProps) {
                   />
                   <Bar dataKey="total" radius={[6, 6, 0, 0]}>
                     <LabelList position="top" offset={8} className="fill-foreground text-xs font-semibold" formatter={(v: number) => (v > 0 ? v : '')} />
-                    {sortedYearData.map((_, i) => (
-                      <Cell key={i} fill={BAR_PALETTE[i % BAR_PALETTE.length]} />
-                    ))}
+                    {sortedYearData.map((entry, i) => {
+                      // When year filter is active, highlight that year's bar
+                      // and mute the others so the active year stands out
+                      const isActive = activeYear === null || entry.tahun === activeYear
+                      return (
+                        <Cell
+                          key={i}
+                          fill={isActive ? BAR_PALETTE[i % BAR_PALETTE.length] : BAR_MUTED}
+                          opacity={isActive ? 1 : 0.6}
+                        />
+                      )
+                    })}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
             </ChartContainer>
           )}
         </CardContent>
       </Card>
+
+      {/* ── Pie Chart: Distribusi Status ── */}
       <Card className="lg:col-span-2 shadow-sm dark:border-gray-800">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <BookCheck className="h-5 w-5 text-emerald-600" />
             Distribusi Status
+            {activeYear && <FilterBadge label={`${activeYear}`} />}
           </CardTitle>
-          <CardDescription>Proporsi pengajuan berdasarkan status saat ini.</CardDescription>
+          <CardDescription>{statusChartDesc}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {statusData.length === 0 ? (
@@ -214,19 +263,25 @@ export function LaporanCharts({ summary }: LaporanChartsProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Horizontal Bar Chart: Distribusi Jenis HKI ── */}
       <Card className="lg:col-span-5 shadow-sm dark:border-gray-800">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Copyright className="h-5 w-5 text-violet-600" />
-            Distribusi Jenis HKI
-          </CardTitle>
-          <CardDescription>Jumlah pengajuan berdasarkan jenis Hak Kekayaan Intelektual.</CardDescription>
+          <div className="flex items-center gap-2 flex-wrap">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Copyright className="h-5 w-5 text-violet-600" />
+              Distribusi Jenis HKI
+            </CardTitle>
+            {activeYear && <FilterBadge label={`${activeYear}`} />}
+            {activeStatusName && <FilterBadge label={activeStatusName} />}
+          </div>
+          <CardDescription>{jenisChartDesc}</CardDescription>
         </CardHeader>
         <CardContent>
           {jenisData.length === 0 ? (
             <EmptyChartState message="Belum ada data jenis HKI." />
           ) : (
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={Math.max(160, jenisData.length * 40)}>
               <BarChart data={jenisData} layout="vertical" margin={{ top: 0, right: 50, left: 10, bottom: 0 }}>
                 <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis type="number" tickLine={false} axisLine={false} className="text-xs" allowDecimals={false} />

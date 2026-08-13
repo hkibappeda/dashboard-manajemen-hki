@@ -163,6 +163,47 @@ export type Database = {
           }
         ]
       }
+      audit_logs: {
+        Row: {
+          id: string
+          user_id: string | null
+          user_snapshot: Json | null
+          action: string
+          resource_type: string
+          report_code: string | null
+          metadata: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          user_snapshot?: Json | null
+          action: string
+          resource_type: string
+          report_code?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          user_snapshot?: Json | null
+          action?: string
+          resource_type?: string
+          report_code?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       jenis_hki: {
         Row: { id_jenis_hki: number; nama_jenis_hki: string; is_active: boolean }
         Insert: { id_jenis_hki?: number; nama_jenis_hki: string; is_active?: boolean }

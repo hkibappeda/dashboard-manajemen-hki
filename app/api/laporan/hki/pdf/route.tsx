@@ -1,17 +1,21 @@
 // app/api/laporan/hki/pdf/route.tsx
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { renderToStream } from '@react-pdf/renderer'
 import { HKIReportPDF } from '@/lib/reports/hki-report-pdf'
 import { getHKIReportSummary } from '@/lib/reports/hki-report-service'
 import { generateAllInsights } from '@/lib/reports/hki-report-insights'
 import type { ReportFilters } from '@/lib/reports/hki-report-types'
+import { logAcceptConfidentiality, logGenerateReport } from '@/lib/audit/audit-service'
+import QRCode from 'qrcode'
 import React from 'react'
+import fs from 'fs'
+import path from 'path'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
 
@@ -25,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, full_name')
       .eq('id', user.id)
       .single()
 
@@ -33,6 +37,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         { error: 'Akses ditolak. Hanya admin yang dapat mengunduh laporan.' },
         { status: 403 }
+      )
+    }
+
+    const body = await req.json().catch(() => null)
+    if (!body?.consent) {
+      return NextResponse.json(
+        { error: 'Persetujuan kerahasiaan diperlukan.' },
+        { status: 400 }
       )
     }
 
@@ -55,8 +67,16 @@ export async function GET(req: NextRequest) {
 
     const filters: ReportFilters = { year, statusId, statusName }
 
-    const summary = await getHKIReportSummary(year, statusId)
+    // Log ACCEPT_CONFIDENTIALITY (report_code is null)
+    const userSnapshot = { name: profile.full_name || 'Administrator', role: profile.role }
+    await logAcceptConfidentiality(user.id, userSnapshot)
 
+    // Generate Report Code (server-side, crypto-safe)
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const randomPart = crypto.randomUUID().replace(/-/g, '').substring(0, 8).toUpperCase()
+    const reportCode = `HKI-RPT-${dateStr}-${randomPart}`
+
+    const summary = await getHKIReportSummary(year, statusId)
     const insights = generateAllInsights(summary, filters)
 
     const generatedAt = new Date().toLocaleString('id-ID', {
@@ -68,12 +88,34 @@ export async function GET(req: NextRequest) {
       minute: '2-digit',
     })
 
+    // QR Code wajib mengarah ke URL Verifikasi untuk memastikan sistem traceability bekerja
+    // Jika hanya teks statis, siapa saja dapat memalsukannya menggunakan generator pihak ketiga.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
+    if (!appUrl) {
+      throw new Error('NEXT_PUBLIC_APP_URL belum dikonfigurasi. QR Code tidak dapat dibuat tanpa domain yang valid.')
+    }
+    const verificationUrl = `${appUrl}/verify/report/${reportCode}`
+
+    const qrDataUri = await QRCode.toDataURL(verificationUrl, {
+      width: 120,
+      margin: 2,
+    })
+
+    // Read logo as base64 to ensure it renders reliably in the PDF regardless of path issues
+    const logoPath = path.join(process.cwd(), 'public', 'logo_sleman.png')
+    const logoBase64 = fs.readFileSync(logoPath, 'base64')
+    const logoDataUri = `data:image/png;base64,${logoBase64}`
+
     const stream = await renderToStream(
       <HKIReportPDF
         summary={summary}
         insights={insights}
         filters={filters}
         generatedAt={generatedAt}
+        generatorName={profile.full_name || 'Administrator'}
+        reportCode={reportCode}
+        qrDataUri={qrDataUri}
+        logoDataUri={logoDataUri}
       />
     )
 
@@ -82,6 +124,9 @@ export async function GET(req: NextRequest) {
       chunks.push(Buffer.from(chunk))
     }
     const pdfBuffer = Buffer.concat(chunks)
+
+    // After success, log GENERATE_REPORT
+    await logGenerateReport(user.id, userSnapshot, reportCode, filters)
 
     const yearLabel = year ? `-${year}` : '-semua-tahun'
     const statusLabel = statusName

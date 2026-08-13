@@ -93,7 +93,9 @@ const StatCard = ({
       <div className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-50">
         {value}
       </div>
-      <p className="text-xs font-medium text-muted-foreground pt-2">{description}</p>
+      <p className="text-xs font-medium text-muted-foreground pt-2">
+        {description}
+      </p>
     </CardContent>
   </Card>
 )
@@ -144,7 +146,8 @@ const WelcomeHeader = cache(async () => {
           {greeting}, {userName}!
         </h1>
         <p className="text-blue-800/80 dark:text-blue-200/80 mt-1.5 text-sm sm:text-base font-medium max-w-xl">
-          Berikut adalah ringkasan operasional dan status terkini dari seluruh pengajuan Hak Kekayaan Intelektual (HKI) hari ini.
+          Berikut adalah ringkasan operasional dan status terkini dari seluruh
+          pengajuan Hak Kekayaan Intelektual (HKI) hari ini.
         </p>
       </div>
       <Button
@@ -238,7 +241,7 @@ const RecentActivity = cache(async () => {
             asChild
             variant="outline"
             size="sm"
-            className="ml-auto gap-1.5 shrink-0"
+            className="ml-auto gap-1.5 shrink-0 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
           >
             <Link href="/dashboard/data-pengajuan-fasilitasi">
               Lihat Semua
@@ -250,7 +253,10 @@ const RecentActivity = cache(async () => {
           {recentEntries && recentEntries.length > 0 ? (
             <div className="space-y-3">
               {recentEntries.map((entry) => (
-                <div key={entry.id_hki} className="group flex items-center gap-4 p-3 -mx-3 rounded-xl transition-all duration-200 hover:bg-muted/50 hover:shadow-sm">
+                <div
+                  key={entry.id_hki}
+                  className="group flex items-center gap-4 p-3 -mx-3 rounded-xl transition-all duration-200 hover:bg-muted/50 hover:shadow-sm"
+                >
                   <Avatar className="h-11 w-11 border shadow-sm dark:border-gray-700 transition-transform duration-200 group-hover:scale-105">
                     <AvatarFallback className="bg-primary/10 text-primary font-bold">
                       {getInitials(entry.pemohon?.nama_pemohon)}
@@ -264,7 +270,10 @@ const RecentActivity = cache(async () => {
                       {entry.pemohon?.nama_pemohon || 'N/A'}
                     </p>
                   </div>
-                  <Badge variant="outline" className="font-medium shrink-0 bg-background/50">
+                  <Badge
+                    variant="outline"
+                    className="font-medium shrink-0 bg-background/50"
+                  >
                     {entry.status_hki?.nama_status || 'N/A'}
                   </Badge>
                 </div>

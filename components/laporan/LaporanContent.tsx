@@ -21,13 +21,12 @@ export async function LaporanContent({ year, statusId, statusName }: LaporanCont
   let errorMessage: string | null = null
 
   try {
+    // Single RPC call — the updated function handles all chart data correctly:
+    // - by_year: always returns ALL years (ignores p_year), respects p_status_id
+    // - by_status: respects both p_year and p_status_id
+    // - by_jenis_hki & by_pengusul: respect both filters
     summary = await getHKIReportSummary(year, statusId)
     chartSummary = { ...summary }
-
-    if (year !== null) {
-      const unfilteredTrend = await getHKIReportSummary(null, statusId)
-      chartSummary.by_year = unfilteredTrend.by_year
-    }
   } catch (err: unknown) {
     errorMessage = err instanceof Error ? err.message : 'Gagal memuat data laporan.'
     summary = {
@@ -72,9 +71,15 @@ export async function LaporanContent({ year, statusId, statusName }: LaporanCont
     <div className="space-y-8 mt-8">
       <LaporanInsightCards summary={summary} />
       <Separator className="dark:border-gray-800" />
-      <LaporanCharts summary={chartSummary} />
+      <LaporanCharts
+        summary={chartSummary}
+        activeYear={year}
+        activeStatusId={statusId}
+        activeStatusName={statusName}
+      />
       <Separator className="dark:border-gray-800" />
       <LaporanInsightSummary insights={insights} activeFilterLabel={activeFilterLabel} />
     </div>
   )
 }
+

@@ -18,6 +18,7 @@ import {
   Users,
   Database,
   LogOut,
+  ShieldAlert,
   type LucideIcon,
 } from 'lucide-react'
 import { signOutAction } from '@/app/actions/auth'
@@ -65,6 +66,11 @@ const managementNavigation: NavItem[] = [
     name: 'Manajemen Pengguna',
     href: '/dashboard/manajemen-pengguna',
     icon: Users,
+  },
+  {
+    name: 'Berita Acara',
+    href: '/dashboard/berita-acara',
+    icon: ShieldAlert,
   },
   { name: 'Pengaturan', href: '/dashboard/pengaturan', icon: Settings },
 ]
@@ -176,7 +182,7 @@ const SidebarContent = memo(function SidebarContent({ user }: { user?: User | nu
               alt="Logo Sleman"
               width={40}
               height={40}
-              className="shrink-0"
+              className="shrink-0 h-auto"
               priority
             />
           </div>

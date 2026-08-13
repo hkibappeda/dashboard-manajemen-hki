@@ -663,7 +663,8 @@ const DataTableRow = memo(
               'dark:border-slate-800 transition-colors',
               !isMounted && 'hidden md:table-row',
               isFlashing && 'bg-emerald-50 dark:bg-emerald-900/30',
-              isSelected && 'bg-primary/5 dark:bg-primary/10'
+              isSelected && 'bg-primary/5 dark:bg-primary/10',
+              // index % 2 === 1 && !isSelected && !isFlashing && 'bg-muted'
             )}
           >
             {showCheckboxColumn && (
@@ -840,7 +841,7 @@ const DataTableRow = memo(
         )}
 
         {(!isMounted || !isDesktop) && (
-          <tr className={cn("border-b dark:border-slate-800", !isMounted && "md:hidden")}>
+          <tr className={cn("border-b dark:border-slate-800", !isMounted && "md:hidden", index % 2 === 1 && !isSelected && !isFlashing && "bg-muted")}>
             <td colSpan={showCheckboxColumn ? 10 : 9} className="p-0">
               <Card
                 className={cn(

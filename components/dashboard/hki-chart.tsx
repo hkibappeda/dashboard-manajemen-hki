@@ -7,7 +7,6 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
-  ResponsiveContainer,
   LabelList,
   Cell,
 } from 'recharts'
@@ -42,7 +41,6 @@ const chartConfig = {
 export function HkiChart({ data }: HkiChartProps) {
   return (
     <ChartContainer config={chartConfig} className="h-[250px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
           margin={{ top: 30, right: 10, left: 0, bottom: 0 }}
@@ -99,7 +97,6 @@ export function HkiChart({ data }: HkiChartProps) {
             ))}
           </Bar>
         </BarChart>
-      </ResponsiveContainer>
     </ChartContainer>
   )
 }
